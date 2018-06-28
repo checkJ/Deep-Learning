@@ -52,7 +52,7 @@ print("次に、入力画像を平滑化(ぼかし)することで故意に画�
       "劣化させたのち、先ほどと同様に画像を分割します。\n"
       "これを訓練画像とします。")
 
-blur = cv2.blur(input_img,(5,5))
+blur = cv2.blur(input_img,(10,10))
 cv2.imwrite("blur.bmp",blur)
 
 height,width_blur,channels = blur.shape
