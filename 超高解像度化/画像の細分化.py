@@ -65,18 +65,20 @@ for n in range(images):
 
     #print("分割後の画像枚数　%s枚" % len(image_name))
 
-    dir_name = "separates"
+    dir_name = "label"
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
     os.chdir("./" + dir_name)
 
     for i in range(len(image_name)):
         save_name = "lr_%03d_%02d.bmp" % (n,i)
-        list_lrname.append(save_name)
+        s = "./label/" + save_name
+        list_lrname.append(s)
         cv2.imwrite(save_name, image_name[i])
 
     #excelへの書き込み。画像ごとに毎回書き込む
         a = n*len(image_name)
+
         sheet1.write(a+i, 0, list_lrname[i])
 
     os.chdir(cd)
@@ -109,14 +111,16 @@ for n in range(images):
 
     #print("画像枚数　%s枚" % len(image_name))
 
-    dir_name = "Blur_separates"
+    dir_name = "training"
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
     os.chdir("./" + dir_name)
 
     for i in range(len(image_name)):
         save_name = "%02dtr_%03d_%02d.bmp" % (G,n,i)
-        list_trname.append(save_name)
+        s = "./training/" + save_name
+        list_trname.append(s)
+
         cv2.imwrite(save_name, image_name[i])
 
 
@@ -127,12 +131,8 @@ for n in range(images):
 
     os.chdir(cd)
 
-
-
 xl_bk.save("dataset.xls")
-xls = pd.ExcelFile("dataset.xls")
-df = xls.parse(sheetname = "Sheet1",index_col=None,na_values =['NA'])
-df.to_csv("dataset.csv")
+
 
 end = time.time() - start
 print("%06f 秒かかった" % end)
