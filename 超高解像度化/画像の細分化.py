@@ -2,96 +2,135 @@
 import cv2
 import os
 import time
+import xlwt
+import csv
+import sys
+import openpyxl
 
-start = time.time()
 
+#画像枚数
+images = 50
+
+#ぼかしのスケール
+G=10
 
 #何pixel単位で分割するか指定する。
-separate_pxl = 30
+separate_pxl = 20
 
+#保存するExcelsheetの準備
+xl_bk = xlwt.Workbook()
+sheet_name ="Dataset"
+sheet1 =xl_bk.add_sheet(sheet_name)
+
+
+#分割したい画像が存在するdirectorypath
+input_dir ="D:\\jifuku\\M2\\プログラミングpython\\Deep Learning\\超高解像度化\\image"
+
+start = time.time()
+if  os.path.exists(sheet_name +".xlsx"):
+   print("すでに同じ名前のエクセルファイルが存在します。\n"
+         "プログラムを停止します。")
+   sys.exit()
 cd = os.getcwd()
 
-input_img = cv2.imread("sample.bmp")
+for n in range(images):
+    os.chdir(input_dir)
 
-height,width,channels = input_img.shape
-
-height_splits = int(height/separate_pxl)
-width_splits = int(width/separate_pxl)
-
-print("この画像サイズは(%d,%d)です。\n"
-      "これを%d×%dに分割し、20pixel四方にします。\n"
-      "このデータ群をラベルとします。"
-      %(height,width,height_splits,width_splits))
-
-image_name = []
-
-for i in range(height_splits):
-    clp1 = input_img[i*separate_pxl:i*separate_pxl+separate_pxl, 0:width]
-
-    for a in range(width_splits):
-        clp2 = clp1[0:separate_pxl,a*separate_pxl:a*separate_pxl+separate_pxl]
-        image_name.append(clp2)
-
-print("画像枚数　%s枚"%len(image_name))
-
-dir_name = "separates"
-if not os.path.exists(dir_name):
-    os.mkdir(dir_name)
-os.chdir("./"+dir_name)
+    #リストを毎回初期化する必要があるため、forの中で宣言
+    list_lrname = []
+    list_trname = []
 
 
-for i in range(len(image_name)):
+    img_name = "trim"+str(n)+".bmp"
+    input_img = cv2.imread(img_name)
 
-    save_name = "lr_%05d.bmp"%i
-    cv2.imwrite(save_name,image_name[i])
+    height, width, channels = input_img.shape
 
-os.chdir(cd)
+    height_splits = int(height / separate_pxl)
+    width_splits = int(width / separate_pxl)
 
+    #print("この画像サイズは(%d,%d)です。\n"
+         # "これを%d×%dに分割し、このデータ群をラベルとします。"
+          #% (height, width, height_splits, width_splits))
 
-print("次に、入力画像を平滑化(ぼかし)することで故意に画質を劣化させます。\n"
-      "劣化させたのち、先ほどと同様に画像を分割します。\n"
-      "これを訓練画像とします。")
+    os.chdir(cd)
+    image_name = []
 
-blur = cv2.blur(input_img,(10,10))
-cv2.imwrite("blur.bmp",blur)
+    for i in range(height_splits):
+        clp1 = input_img[i * separate_pxl:i * separate_pxl + separate_pxl, 0:width]
 
-height,width_blur,channels = blur.shape
+        for a in range(width_splits):
+            clp2 = clp1[0:separate_pxl, a * separate_pxl:a * separate_pxl + separate_pxl]
+            image_name.append(clp2)
 
-height_splits = int(height/separate_pxl)
-width_splits = int(width/separate_pxl)
+    #print("分割後の画像枚数　%s枚" % len(image_name))
 
-print("この画像サイズは(%d,%d)です。\n"
-      "これを%d×%dに分割し、20pixel四方にします。\n"
-      "このデータ群を正解とします。"
-      %(height,width,height_splits,width_splits))
+    dir_name = "separates"
+    if not os.path.exists(dir_name):
+        os.mkdir(dir_name)
+    os.chdir("./" + dir_name)
 
-image_name = []
+    for i in range(len(image_name)):
+        save_name = "lr_%03d_%02d.bmp" % (n,i)
+        list_lrname.append(save_name)
+        cv2.imwrite(save_name, image_name[i])
 
-for i in range(height_splits):
-    clp1 = input_img[i*separate_pxl:i*separate_pxl+separate_pxl, 0:width]
+    #excelへの書き込み。画像ごとに毎回書き込む
+        a = n*len(image_name)
+        sheet1.write(a+i, 0, list_lrname[i])
 
-    for a in range(width_splits):
-        clp2 = clp1[0:separate_pxl,a*separate_pxl:a*separate_pxl+separate_pxl]
-        image_name.append(clp2)
-
-print("画像枚数　%s枚"%len(image_name))
-
-dir_name = "Blur_separates"
-if not os.path.exists(dir_name):
-    os.mkdir(dir_name)
-os.chdir("./"+dir_name)
-
-
-for i in range(len(image_name)):
-
-    save_name = "tr_%05d.bmp"%i
-    cv2.imwrite(save_name,image_name[i])
+    os.chdir(cd)
 
 
+    #print("次に、入力画像を平滑化(ぼかし)することで故意に画質を劣化させます。\n"
+     #     "劣化させたのち、先ほどと同様に画像を分割します。\n"
+      #    "これを訓練画像とします。")
 
-#Excelに書き込む
+    blur = cv2.blur(input_img, (G, G))
+    cv2.imwrite("blur.bmp", blur)
+
+    height, width_blur, channels = blur.shape
+
+    height_splits = int(height / separate_pxl)
+    width_splits = int(width / separate_pxl)
+
+    #print("この画像サイズは(%d,%d)です。\n"
+     #     "これを%d×%dに分割し、このデータ群を正解とします。"
+      #    % (height, width, height_splits, width_splits))
+
+    image_name = []
+
+    for i in range(height_splits):
+        clp1 = input_img[i * separate_pxl:i * separate_pxl + separate_pxl, 0:width]
+
+        for a in range(width_splits):
+            clp2 = clp1[0:separate_pxl, a * separate_pxl:a * separate_pxl + separate_pxl]
+            image_name.append(clp2)
+
+    #print("画像枚数　%s枚" % len(image_name))
+
+    dir_name = "Blur_separates"
+    if not os.path.exists(dir_name):
+        os.mkdir(dir_name)
+    os.chdir("./" + dir_name)
+
+    for i in range(len(image_name)):
+        save_name = "%02dtr_%03d_%02d.bmp" % (G,n,i)
+        list_trname.append(save_name)
+        cv2.imwrite(save_name, image_name[i])
+
+
+    #Excelに書き込み
+    #書き込み開始位置は（画像枚数）×（分割数）分の行の間隔をあけて書き込めば連続で行ける
+
+        sheet1.write( n * len(image_name)+i,1, list_trname[i])
+
+    os.chdir(cd)
 
 
 
-end = time.time()-start
-print("%06f 秒かかった"%end)
+xl_bk.save("dataset.xls")
+
+
+end = time.time() - start
+print("%06f 秒かかった" % end)
