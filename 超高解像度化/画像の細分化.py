@@ -5,7 +5,7 @@ import time
 import xlwt
 import csv
 import sys
-import openpyxl
+import pandas as pd
 
 
 #画像枚数
@@ -130,7 +130,9 @@ for n in range(images):
 
 
 xl_bk.save("dataset.xls")
-
+xls = pd.ExcelFile("dataset.xls")
+df = xls.parse(sheetname = "Sheet1",index_col=None,na_values =['NA'])
+df.to_csv("dataset.csv")
 
 end = time.time() - start
 print("%06f 秒かかった" % end)
